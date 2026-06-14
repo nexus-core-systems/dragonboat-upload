@@ -72,6 +72,12 @@ def init_db() -> None:
         """)
         db.execute("CREATE INDEX IF NOT EXISTS idx_created ON uploads(created_at)")
         db.execute("CREATE INDEX IF NOT EXISTS idx_ip ON uploads(ip_address, created_at)")
+        # Migration: image_url Spalte hinzufügen falls nicht vorhanden
+        try:
+            db.execute("ALTER TABLE uploads ADD COLUMN image_url TEXT NOT NULL DEFAULT ''")
+            log.info("Migration: image_url Spalte hinzugefügt")
+        except Exception:
+            pass  # Spalte existiert bereits
 
 @contextmanager
 def get_db():
