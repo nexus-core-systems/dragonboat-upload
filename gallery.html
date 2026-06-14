@@ -323,12 +323,12 @@
   <!-- HEADER -->
   <header>
     <div class="logo-mark">ANLEGER<span>HH</span></div>
-    <a href="/" class="nav-link">📸 Foto hochladen</a>
+    <a href="/" class="nav-link">Foto hochladen</a>
   </header>
 
   <!-- HERO -->
   <div class="hero">
-    <div class="hero-badge">🏆 Hall of Fame</div>
+    <div class="hero-badge">Hall of Fame</div>
     <h1>Unsere<br><em>Alsterschipper</em></h1>
     <p>Alle Teams, die mit uns auf der Alster gepaddelt sind.</p>
     <div class="hero-stats">
@@ -337,11 +337,11 @@
         <div class="stat-label">Teams</div>
       </div>
       <div class="stat">
-        <div class="stat-num">🚣</div>
+        <div class="stat-num"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 22 C8 17 14 15 16 15 C18 15 24 17 28 22" stroke="#B0C8DE" stroke-width="2" stroke-linecap="round"/><path d="M6 21 L26 21 C26 21 23 27 16 27 C9 27 6 21 6 21Z" stroke="#B0C8DE" stroke-width="1.5" fill="none"/><path d="M10 21 L10 16 M13 21 L13 15 M16 21 L16 14 M19 21 L19 15 M22 21 L22 16" stroke="#B0C8DE" stroke-width="1.5" stroke-linecap="round"/></svg></div>
         <div class="stat-label">Auf der Alster</div>
       </div>
       <div class="stat">
-        <div class="stat-num">⭐</div>
+        <div class="stat-num"><svg width="32" height="32" viewBox="0 0 32 32" fill="none"><polygon points="16,4 19.5,12.5 28,13.5 22,19.5 23.5,28 16,23.5 8.5,28 10,19.5 4,13.5 12.5,12.5" stroke="#B0C8DE" stroke-width="1.8" fill="none" stroke-linejoin="round"/></svg></div>
         <div class="stat-label">Unvergesslich</div>
       </div>
     </div>
@@ -366,7 +366,7 @@
     <!-- Grid -->
     <div class="grid" id="grid">
       <div class="state-box">
-        <span class="state-icon">⏳</span>
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#B0C8DE" stroke-width="1.5" style="margin:0 auto 12px;display:block"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
         <p>Fotos werden geladen…</p>
       </div>
     </div>
@@ -378,7 +378,7 @@
 
     <!-- CTA -->
     <div class="cta-bottom">
-      <a href="/" class="btn-upload">📸 Euer Teamfoto hochladen</a>
+      <a href="/" class="btn-upload">Euer Teamfoto hochladen</a>
     </div>
 
   </div>
@@ -412,7 +412,7 @@
         applyFilter();
       } catch (e) {
         document.getElementById('grid').innerHTML =
-          '<div class="state-box"><span class="state-icon">😔</span><p>Fotos konnten nicht geladen werden.<br>Bitte Seite neu laden.</p></div>';
+          '<div class="state-box"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#B0C8DE" stroke-width="1.5" style="margin:0 auto 12px;display:block"><circle cx="12" cy="12" r="10"/><line x1="8" y1="15" x2="16" y2="15"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg><p>Fotos konnten nicht geladen werden.<br>Bitte Seite neu laden.</p></div>';
       }
     }
 
@@ -439,7 +439,7 @@
       if (reset) grid.innerHTML = '';
 
       if (filtered.length === 0) {
-        grid.innerHTML = '<div class="state-box"><span class="state-icon">🔍</span><p>Keine Teams gefunden.</p></div>';
+        grid.innerHTML = '<div class="state-box"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#B0C8DE" stroke-width="1.5" style="margin:0 auto 12px;display:block"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><p>Keine Teams gefunden.</p></div>';
         document.getElementById('loadMoreWrap').style.display = 'none';
         document.getElementById('countLabel').textContent = '0 Teams';
         return;
@@ -459,7 +459,7 @@
           '<div class="card-body">' +
             '<div class="card-team">' + escHtml(photo.teamname) + '</div>' +
             (photo.firma ? '<div class="card-firma">' + escHtml(photo.firma) + '</div>' : '') +
-            '<div class="card-date">📅 ' + escHtml(photo.date) + '</div>' +
+            '<div class="card-date">' + escHtml(photo.date) + '</div>' +
           '</div>';
         grid.appendChild(card);
       });
