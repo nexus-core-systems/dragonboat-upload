@@ -1,7 +1,7 @@
 """
 Drachenboot Hamburg — Foto-Upload Backend
 ==========================================
-FastAPI · Python 3.10+
+FastAPI · Python 3.10+ · Cloudflare R2 Storage
 """
 
 import os
@@ -13,16 +13,16 @@ from pathlib import Path
 from contextlib import contextmanager
 from typing import Annotated
 
+import boto3
+from botocore.client import Config
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-import aiofiles
 from PIL import Image
 
 # ── CONFIG ────────────────────────────────────────────────────────────────────
 
-UPLOAD_DIR   = Path(os.getenv("UPLOAD_DIR", "uploads"))
 DB_PATH      = Path(os.getenv("DB_PATH", "uploads.db"))
 MAX_FILE_MB  = int(os.getenv("MAX_FILE_MB", "20"))
 MAX_BYTES    = MAX_FILE_MB * 1024 * 1024
@@ -30,9 +30,27 @@ ALLOWED_MIME = {"image/jpeg", "image/png", "image/webp", "image/heic", "image/he
 ALLOWED_EXT  = {".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"}
 MAX_UPLOADS_PER_HOUR = 5
 
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+# R2 Config
+R2_ACCESS_KEY  = os.getenv("R2_ACCESS_KEY")
+R2_SECRET_KEY  = os.getenv("R2_SECRET_KEY")
+R2_ENDPOINT    = os.getenv("R2_ENDPOINT")
+R2_BUCKET      = os.getenv("R2_BUCKET", "dragonboat-uploads")
+R2_PUBLIC_URL  = os.getenv("R2_PUBLIC_URL", "").rstrip("/")
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger(__name__)
+
+# ── R2 CLIENT ─────────────────────────────────────────────────────────────────
+
+def get_r2():
+    return boto3.client(
+        "s3",
+        endpoint_url=R2_ENDPOINT,
+        aws_access_key_id=R2_ACCESS_KEY,
+        aws_secret_access_key=R2_SECRET_KEY,
+        config=Config(signature_version="s3v4"),
+        region_name="auto",
+    )
 
 # ── DATABASE ──────────────────────────────────────────────────────────────────
 
@@ -45,7 +63,7 @@ def init_db() -> None:
                 teamname   TEXT    NOT NULL,
                 firma      TEXT,
                 filename   TEXT    NOT NULL,
-                filepath   TEXT    NOT NULL,
+                image_url  TEXT    NOT NULL,
                 mime_type  TEXT,
                 filesize   INTEGER,
                 ip_address TEXT,
@@ -67,12 +85,7 @@ def get_db():
 
 # ── APP ───────────────────────────────────────────────────────────────────────
 
-app = FastAPI(
-    title="Drachenboot Hamburg · Upload API",
-    version="1.0.0",
-    docs_url="/api/docs",
-    redoc_url=None,
-)
+app = FastAPI(title="Drachenboot Hamburg · Upload API", version="2.0.0", docs_url="/api/docs", redoc_url=None)
 
 app.add_middleware(
     CORSMiddleware,
@@ -84,7 +97,7 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup():
     init_db()
-    log.info("Datenbank initialisiert · Upload-Dir: %s", UPLOAD_DIR.resolve())
+    log.info("DB initialisiert · R2 Bucket: %s · Public URL: %s", R2_BUCKET, R2_PUBLIC_URL)
 
 # ── VALIDATION ────────────────────────────────────────────────────────────────
 
@@ -114,13 +127,13 @@ def check_rate_limit(ip: str) -> None:
 
 def safe_filename(original: str, upload_id: str) -> str:
     suffix = Path(original).suffix.lower() or ".jpg"
-    return f"{upload_id}{suffix}"
+    return f"teamfotos/{upload_id}{suffix}"
 
 # ── ROUTES ───────────────────────────────────────────────────────────────────
 
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "service": "drachenboot-upload"}
+    return {"status": "ok", "r2_bucket": R2_BUCKET}
 
 
 @app.post("/api/upload")
@@ -142,34 +155,42 @@ async def upload_photo(
     validate_image_file(photo, data)
 
     upload_id = str(uuid.uuid4())
-    filename  = safe_filename(photo.filename or "foto.jpg", upload_id)
-    filepath  = UPLOAD_DIR / filename
+    key       = safe_filename(photo.filename or "foto.jpg", upload_id)
+    image_url = f"{R2_PUBLIC_URL}/{key}"
 
-    async with aiofiles.open(filepath, "wb") as f:
-        await f.write(data)
+    # Upload zu R2
+    try:
+        r2 = get_r2()
+        r2.put_object(
+            Bucket=R2_BUCKET,
+            Key=key,
+            Body=data,
+            ContentType=photo.content_type,
+        )
+        log.info("R2 Upload OK · %s", key)
+    except Exception as e:
+        log.error("R2 Upload fehlgeschlagen: %s", e)
+        raise HTTPException(status_code=500, detail="Foto konnte nicht gespeichert werden.")
 
     now = datetime.now(timezone.utc).isoformat()
     with get_db() as db:
         db.execute(
             """INSERT INTO uploads
-               (upload_id, teamname, firma, filename, filepath, mime_type, filesize, ip_address, created_at)
+               (upload_id, teamname, firma, filename, image_url, mime_type, filesize, ip_address, created_at)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (upload_id, teamname.strip(), firma.strip() if firma else None,
-             filename, str(filepath), photo.content_type, len(data), client_ip, now)
+             key, image_url, photo.content_type, len(data), client_ip, now)
         )
 
-    log.info("Upload OK · Team: %s · Firma: %s · Datei: %s · %s KB",
-             teamname, firma or "–", filename, len(data) // 1024)
-
+    log.info("Upload OK · Team: %s · %s KB", teamname, len(data) // 1024)
     return JSONResponse(content={"upload_id": upload_id, "message": "Foto erfolgreich gespeichert. Danke!"})
 
 
 @app.get("/api/photos")
-async def get_photos(limit: int = 50, offset: int = 0):
-    """Öffentliche Galerie-API — gibt Teamname, Firma, Datum und Bild-URL zurück."""
+async def get_photos(limit: int = 200, offset: int = 0):
     with get_db() as db:
         rows = db.execute(
-            """SELECT upload_id, teamname, firma, filename, created_at
+            """SELECT upload_id, teamname, firma, image_url, created_at
                FROM uploads ORDER BY created_at DESC LIMIT ? OFFSET ?""",
             (limit, offset)
         ).fetchall()
@@ -177,18 +198,16 @@ async def get_photos(limit: int = 50, offset: int = 0):
 
     items = []
     for r in rows:
-        # Datum formatieren: "14. Jun 2026"
         try:
             dt = datetime.fromisoformat(r["created_at"])
             date_str = dt.strftime("%-d. %b %Y")
         except Exception:
             date_str = r["created_at"][:10]
-
         items.append({
             "upload_id": r["upload_id"],
             "teamname":  r["teamname"],
             "firma":     r["firma"],
-            "image_url": f"/uploads/{r['filename']}",
+            "image_url": r["image_url"],
             "date":      date_str,
         })
 
@@ -208,11 +227,7 @@ async def list_uploads(limit: int = 50, offset: int = 0):
 
 
 # ── STATISCHE DATEIEN ─────────────────────────────────────────────────────────
-# Uploads-Ordner öffentlich servieren (für Galerie)
-app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
-# Frontend-Dateien (index.html, gallery.html)
 app.mount("/", StaticFiles(directory=".", html=True), name="static")
-
 
 # ── HAUPTPROGRAMM ─────────────────────────────────────────────────────────────
 if __name__ == "__main__":
