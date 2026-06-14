@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Teamfoto hochladen · Drachenboot Hamburg</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    /* ── TOKENS ───────────────────────────────────────────────────── */
+    :root {
+      --ocean:    #0D2B45;
+      --deep:     #081C2E;
+      --paddle:   #F4700E;
+      --paddle-h: #D95E00;
+      --foam:     #E8F4FF;
+      --mist:     #B0C8DE;
+      --white:    #FFFFFF;
+      --success:  #1AAF74;
+      --error-bg: #FFF0EE;
+      --error-bd: #F4700E;
+
+      --r-card:   16px;
+      --r-btn:    12px;
+      --shadow:   0 4px 24px rgba(13,43,69,0.18);
+    }
+
+    /* ── RESET ────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--ocean);
+      color: var(--white);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ── HEADER ───────────────────────────────────────────────────── */
+    header {
+      width: 100%;
+      padding: 20px 24px 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo-mark {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800;
+      font-size: 22px;
+      letter-spacing: 0.02em;
+      color: var(--white);
+      line-height: 1;
+    }
+    .logo-mark span { color: var(--paddle); }
+
+    /* ── HERO ─────────────────────────────────────────────────────── */
+    .hero {
+      text-align: center;
+      padding: 32px 24px 24px;
+      max-width: 480px;
+      width: 100%;
+    }
+    .hero-emoji { font-size: 48px; display: block; margin-bottom: 12px; }
+    .hero h1 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800;
+      font-size: clamp(32px, 9vw, 44px);
+      line-height: 1.05;
+      letter-spacing: 0.01em;
+      text-transform: uppercase;
+    }
+    .hero h1 em { color: var(--paddle); font-style: normal; }
+    .hero p {
+      margin-top: 10px;
+      font-size: 15px;
+      color: var(--mist);
+      line-height: 1.55;
+    }
+
+    /* ── WAVE DIVIDER (Signature element) ────────────────────────── */
+    .wave-divider {
+      width: 100%;
+      overflow: hidden;
+      line-height: 0;
+      margin: 4px 0;
+    }
+    .wave-divider svg { display: block; width: 100%; }
+
+    /* ── CARD CONTAINER ───────────────────────────────────────────── */
+    .card {
+      background: var(--white);
+      color: var(--ocean);
+      border-radius: var(--r-card) var(--r-card) 0 0;
+      width: 100%;
+      max-width: 480px;
+      padding: 28px 24px 40px;
+      flex: 1;
+    }
+
+    /* ── STEP INDICATOR ───────────────────────────────────────────── */
+    .step-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-bottom: 24px;
+    }
+    .step-dot {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800;
+      font-size: 14px;
+      flex-shrink: 0;
+      transition: all .3s ease;
+    }
+    .step-dot.active  { background: var(--paddle); color: var(--white); }
+    .step-dot.done    { background: var(--success); color: var(--white); }
+    .step-dot.pending { background: var(--foam); color: var(--mist); }
+    .step-line {
+      flex: 1;
+      height: 2px;
+      background: var(--foam);
+      position: relative;
+      overflow: hidden;
+    }
+    .step-line-fill {
+      position: absolute; top: 0; left: 0; height: 100%;
+      background: var(--success);
+      width: 0%;
+      transition: width .6s ease;
+    }
+    .step-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--mist);
+      margin-left: 8px;
+    }
+
+    /* ── FORM ─────────────────────────────────────────────────────── */
+    form { display: flex; flex-direction: column; gap: 16px; }
+
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ocean);
+      letter-spacing: 0.03em;
+    }
+    .field label .opt {
+      font-weight: 400;
+      color: var(--mist);
+      font-size: 12px;
+    }
+    .field input[type="text"] {
+      width: 100%;
+      padding: 13px 14px;
+      border: 2px solid var(--foam);
+      border-radius: 10px;
+      font-family: 'Inter', sans-serif;
+      font-size: 16px; /* prevents iOS zoom */
+      color: var(--ocean);
+      background: var(--foam);
+      outline: none;
+      transition: border-color .2s, background .2s;
+    }
+    .field input[type="text"]:focus {
+      border-color: var(--paddle);
+      background: var(--white);
+    }
+    .field input[type="text"]::placeholder { color: var(--mist); }
+
+    /* ── UPLOAD ZONE ──────────────────────────────────────────────── */
+    .upload-zone {
+      position: relative;
+      border: 2.5px dashed var(--paddle);
+      border-radius: 14px;
+      background: #FFF6F0;
+      padding: 28px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: background .2s, border-color .2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .upload-zone:hover, .upload-zone.drag-over {
+      background: #FFE8D6;
+      border-color: var(--paddle-h);
+    }
+    .upload-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+    .upload-icon { font-size: 36px; display: block; margin-bottom: 8px; pointer-events: none; }
+    .upload-label {
+      display: block;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800;
+      font-size: 20px;
+      color: var(--paddle);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      pointer-events: none;
+    }
+    .upload-sub {
+      display: block;
+      font-size: 12px;
+      color: var(--mist);
+      margin-top: 4px;
+      pointer-events: none;
+    }
+
+    /* Preview state */
+    .upload-zone.has-file { border-style: solid; background: #F0FFF8; border-color: var(--success); }
+    .upload-zone.has-file .upload-icon::after { content: '✅'; }
+    .file-preview {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+      pointer-events: none;
+    }
+    .file-preview.visible { display: flex; justify-content: center; }
+    .file-preview img {
+      width: 56px; height: 56px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 2px solid var(--success);
+    }
+    .file-preview-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ocean);
+      text-align: left;
+      word-break: break-all;
+    }
+    .file-preview-size { font-size: 11px; color: var(--mist); }
+
+    /* ── ERROR / INFO MESSAGES ────────────────────────────────────── */
+    .msg {
+      display: none;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .msg.error { background: var(--error-bg); border: 1.5px solid var(--error-bd); color: #C0380A; }
+    .msg.info  { background: #EBF5FF; border: 1.5px solid #90C0E8; color: var(--ocean); }
+    .msg.visible { display: block; }
+
+    /* ── SUBMIT BUTTON ────────────────────────────────────────────── */
+    .btn-primary {
+      width: 100%;
+      padding: 16px;
+      background: var(--paddle);
+      color: var(--white);
+      border: none;
+      border-radius: var(--r-btn);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800;
+      font-size: 22px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(244,112,14,0.35);
+      transition: transform .15s, box-shadow .15s, background .15s;
+      -webkit-tap-highlight-color: transparent;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-primary:active {
+      transform: scale(0.97);
+      box-shadow: 0 2px 8px rgba(244,112,14,0.25);
+    }
+    .btn-primary:disabled {
+      background: var(--mist);
+      box-shadow: none;
+      cursor: not-allowed;
+    }
+    .btn-primary .spinner {
+      display: none;
+      width: 20px; height: 20px;
+      border: 3px solid rgba(255,255,255,0.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      position: absolute;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    .btn-primary.loading .spinner { display: block; }
+    @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
+
+    /* ── PROGRESS BAR ─────────────────────────────────────────────── */
+    .progress-wrap {
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .progress-wrap.visible { display: flex; }
+    .progress-track {
+      width: 100%;
+      height: 6px;
+      background: var(--foam);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--paddle), #FF9A4D);
+      border-radius: 99px;
+      transition: width .3s ease;
+    }
+    .progress-label { font-size: 12px; color: var(--mist); font-weight: 500; }
+
+    /* ── PRIVACY NOTE ─────────────────────────────────────────────── */
+    .privacy {
+      font-size: 11px;
+      color: var(--mist);
+      text-align: center;
+      line-height: 1.5;
+      margin-top: 4px;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       STEP 2 — THANK YOU
+    ═══════════════════════════════════════════════════════════════ */
+    #step2 { display: none; }
+
+    .thank-hero {
+      text-align: center;
+      padding-bottom: 20px;
+      border-bottom: 2px solid var(--foam);
+      margin-bottom: 24px;
+    }
+    .thank-anim { font-size: 52px; display: block; animation: bounce 1s ease .3s both; }
+    @keyframes bounce {
+      0%   { transform: scale(0.5); opacity: 0; }
+      70%  { transform: scale(1.15); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .thank-hero h2 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800;
+      font-size: 30px;
+      text-transform: uppercase;
+      margin-top: 8px;
+    }
+    .thank-hero h2 em { color: var(--paddle); font-style: normal; }
+    .thank-hero p {
+      font-size: 14px;
+      color: #5a7a94;
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+
+    .cta-group { display: flex; flex-direction: column; gap: 12px; }
+
+    .btn-cta {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px 18px;
+      border-radius: var(--r-btn);
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: 15px;
+      transition: transform .15s, box-shadow .15s;
+      box-shadow: var(--shadow);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-cta:active { transform: scale(0.97); }
+    .btn-cta .cta-icon { font-size: 28px; flex-shrink: 0; }
+    .btn-cta .cta-text { text-align: left; line-height: 1.3; }
+    .btn-cta .cta-title { display: block; font-weight: 700; }
+    .btn-cta .cta-sub { display: block; font-size: 12px; opacity: 0.75; margin-top: 1px; }
+    .btn-cta .cta-arrow { margin-left: auto; font-size: 18px; opacity: 0.6; }
+
+    .btn-google {
+      background: var(--ocean);
+      color: var(--white);
+    }
+    .btn-insta {
+      background: linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #FCAF45 100%);
+      color: var(--white);
+    }
+
+    /* ── CHALLENGE TEASER ─────────────────────────────────────────── */
+    .challenge-box {
+      margin-top: 24px;
+      background: linear-gradient(135deg, #0D2B45, #1A4A72);
+      color: var(--white);
+      border-radius: 14px;
+      padding: 18px 18px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .challenge-box .trophy { font-size: 30px; flex-shrink: 0; }
+    .challenge-box h3 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800;
+      font-size: 18px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .challenge-box h3 em { color: var(--paddle); font-style: normal; }
+    .challenge-box p { font-size: 13px; color: var(--mist); margin-top: 3px; line-height: 1.45; }
+
+    /* ── FOOTER ───────────────────────────────────────────────────── */
+    .footer-note {
+      text-align: center;
+      padding: 16px 24px 28px;
+      font-size: 11px;
+      color: var(--mist);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo-mark">DRACHENBOOT<span>HH</span></div>
+  </header>
+
+  <!-- HERO -->
+  <div class="hero">
+    <span class="hero-emoji">🚣</span>
+    <h1>Ladet euer<br><em>Teamfoto</em> hoch</h1>
+    <p>Nur 30 Sekunden — und ihr seid dabei!</p>
+  </div>
+
+  <!-- WAVE (Signature) -->
+  <div class="wave-divider">
+    <svg viewBox="0 0 480 24" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0,12 C80,0 160,24 240,12 C320,0 400,24 480,12 L480,24 L0,24 Z" fill="#ffffff"/>
+    </svg>
+  </div>
+
+  <!-- CARD -->
+  <div class="card">
+
+    <!-- Step indicator -->
+    <div class="step-indicator">
+      <div class="step-dot active" id="dot1">1</div>
+      <div class="step-line"><div class="step-line-fill" id="line1fill"></div></div>
+      <div class="step-dot pending" id="dot2">2</div>
+      <span class="step-label" id="step-label-text">Foto hochladen</span>
+    </div>
+
+    <!-- ── STEP 1: UPLOAD FORM ── -->
+    <div id="step1">
+      <form id="uploadForm" novalidate>
+
+        <!-- Teamname -->
+        <div class="field">
+          <label for="teamname">Teamname</label>
+          <input type="text" id="teamname" name="teamname"
+                 placeholder="z. B. „Die Paddelhelden""
+                 autocomplete="off" autocorrect="off" spellcheck="false" required />
+        </div>
+
+        <!-- Firma (optional) -->
+        <div class="field">
+          <label for="firma">Firma <span class="opt">(optional)</span></label>
+          <input type="text" id="firma" name="firma"
+                 placeholder="z. B. Acme GmbH"
+                 autocomplete="organization" autocorrect="off" spellcheck="false" />
+        </div>
+
+        <!-- Upload zone -->
+        <div class="field">
+          <label>Euer Teamfoto</label>
+          <div class="upload-zone" id="uploadZone">
+            <input type="file" id="fileInput" name="photo"
+                   accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+                   aria-label="Foto auswählen" />
+            <span class="upload-icon" id="uploadIcon">📸</span>
+            <span class="upload-label">Foto auswählen</span>
+            <span class="upload-sub">JPG, PNG, WEBP, HEIC · max. 20 MB</span>
+            <div class="file-preview" id="filePreview">
+              <img id="previewImg" src="" alt="Vorschau" />
+              <div>
+                <div class="file-preview-name" id="previewName"></div>
+                <div class="file-preview-size" id="previewSize"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Messages -->
+        <div class="msg error" id="errorMsg" role="alert"></div>
+        <div class="msg info"  id="infoMsg"  role="status"></div>
+
+        <!-- Progress -->
+        <div class="progress-wrap" id="progressWrap">
+          <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+          <span class="progress-label" id="progressLabel">Wird hochgeladen…</span>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit" class="btn-primary" id="submitBtn">
+          Jetzt hochladen 🚀
+          <span class="spinner"></span>
+        </button>
+
+        <p class="privacy">🔒 Euer Foto wird nur für die Veranstaltung verwendet und nicht ohne Erlaubnis veröffentlicht.</p>
+      </form>
+    </div><!-- /step1 -->
+
+    <!-- ── STEP 2: THANK YOU ── -->
+    <div id="step2">
+      <div class="thank-hero">
+        <span class="thank-anim">🎉</span>
+        <h2>Foto gespeichert,<br><em>Team!</em></h2>
+        <p>Helft uns jetzt, damit noch mehr Teams<br>dieses Erlebnis entdecken können:</p>
+      </div>
+
+      <div class="cta-group">
+        <a href="https://search.google.com/local/writereview?placeid=ChIJeV4NJcCIsUcRTU8in1qsLU0" target="_blank" rel="noopener" class="btn-cta btn-google" id="googleBtn">
+          <span class="cta-icon">⭐</span>
+          <span class="cta-text">
+            <span class="cta-title">Google-Bewertung schreiben</span>
+            <span class="cta-sub">Erzählt anderen von eurem Erlebnis</span>
+          </span>
+          <span class="cta-arrow">›</span>
+        </a>
+
+        <a href="https://www.instagram.com/anleger_hamburg/" target="_blank" rel="noopener" class="btn-cta btn-insta" id="instaBtn">
+          <span class="cta-icon">📸</span>
+          <span class="cta-text">
+            <span class="cta-title">Uns auf Instagram folgen</span>
+            <span class="cta-sub">Findet euer Teamfoto und markiert euch!</span>
+          </span>
+          <span class="cta-arrow">›</span>
+        </a>
+      </div>
+
+      <!-- Challenge teaser -->
+      <div class="challenge-box">
+        <span class="trophy">🏆</span>
+        <div>
+          <h3>Teamfoto-<em>Challenge</em></h3>
+          <p>Das Team mit den meisten Likes auf Instagram gewinnt eine <strong>Freirunde</strong>! Postet euer Foto mit <strong>#DrachenbootHH</strong> und kämpft um den Titel.</p>
+        </div>
+      </div>
+    </div><!-- /step2 -->
+
+  </div><!-- /card -->
+
+  <p class="footer-note">© Drachenboot Hamburg · Datenschutz</p>
+
+  <script>
+    // ── CONFIG ──────────────────────────────────────────────────────
+    const API_URL = '/api/upload';   // ← Euren Backend-Endpunkt hier eintragen
+    const MAX_MB  = 20;
+
+    // ── REFS ────────────────────────────────────────────────────────
+    const form        = document.getElementById('uploadForm');
+    const fileInput   = document.getElementById('fileInput');
+    const uploadZone  = document.getElementById('uploadZone');
+    const uploadIcon  = document.getElementById('uploadIcon');
+    const filePreview = document.getElementById('filePreview');
+    const previewImg  = document.getElementById('previewImg');
+    const previewName = document.getElementById('previewName');
+    const previewSize = document.getElementById('previewSize');
+    const errorMsg    = document.getElementById('errorMsg');
+    const infoMsg     = document.getElementById('infoMsg');
+    const submitBtn   = document.getElementById('submitBtn');
+    const progressWrap= document.getElementById('progressWrap');
+    const progressFill= document.getElementById('progressFill');
+    const progressLabel=document.getElementById('progressLabel');
+    const dot1        = document.getElementById('dot1');
+    const dot2        = document.getElementById('dot2');
+    const line1fill   = document.getElementById('line1fill');
+    const stepLabel   = document.getElementById('step-label-text');
+
+    // ── HELPERS ─────────────────────────────────────────────────────
+    function showError(msg) {
+      errorMsg.textContent = msg;
+      errorMsg.classList.add('visible');
+      infoMsg.classList.remove('visible');
+    }
+    function showInfo(msg) {
+      infoMsg.textContent = msg;
+      infoMsg.classList.add('visible');
+      errorMsg.classList.remove('visible');
+    }
+    function clearMessages() {
+      errorMsg.classList.remove('visible');
+      infoMsg.classList.remove('visible');
+    }
+    function formatBytes(bytes) {
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
+      return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+    }
+
+    // ── FILE SELECTION ───────────────────────────────────────────────
+    fileInput.addEventListener('change', handleFileSelect);
+
+    function handleFileSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      clearMessages();
+
+      // Validate type
+      const allowed = ['image/jpeg','image/png','image/webp','image/heic','image/heif'];
+      if (!allowed.includes(file.type) && !file.name.match(/\.(jpe?g|png|webp|heic|heif)$/i)) {
+        showError('Bitte nur Bilder hochladen (JPG, PNG, WEBP oder HEIC).');
+        fileInput.value = '';
+        return;
+      }
+      // Validate size
+      if (file.size > MAX_MB * 1024 * 1024) {
+        showError('Das Foto ist zu groß (max. ' + MAX_MB + ' MB). Bitte ein kleineres Bild wählen.');
+        fileInput.value = '';
+        return;
+      }
+
+      // Show preview
+      uploadZone.classList.add('has-file');
+      uploadIcon.textContent = '✅';
+      previewName.textContent = file.name;
+      previewSize.textContent = formatBytes(file.size);
+      filePreview.classList.add('visible');
+
+      const reader = new FileReader();
+      reader.onload = ev => { previewImg.src = ev.target.result; };
+      reader.readAsDataURL(file);
+    }
+
+    // ── DRAG & DROP ──────────────────────────────────────────────────
+    uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+    uploadZone.addEventListener('drop', e => {
+      e.preventDefault();
+      uploadZone.classList.remove('drag-over');
+      if (e.dataTransfer.files.length) {
+        fileInput.files = e.dataTransfer.files;
+        fileInput.dispatchEvent(new Event('change'));
+      }
+    });
+
+    // ── FORM SUBMIT ──────────────────────────────────────────────────
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearMessages();
+
+      const teamname = document.getElementById('teamname').value.trim();
+      const firma    = document.getElementById('firma').value.trim();
+      const file     = fileInput.files[0];
+
+      if (!teamname) { showError('Bitte gebt euren Teamnamen ein.'); return; }
+      if (!file)     { showError('Bitte wählt ein Teamfoto aus.'); return; }
+
+      // UI: loading state
+      submitBtn.disabled = true;
+      submitBtn.classList.add('loading');
+      submitBtn.childNodes[0].textContent = 'Wird hochgeladen… ';
+      progressWrap.classList.add('visible');
+
+      const formData = new FormData();
+      formData.append('teamname', teamname);
+      formData.append('firma', firma);
+      formData.append('photo', file);
+
+      try {
+        // XHR für Fortschrittsbalken
+        await uploadWithProgress(formData);
+        transitionToStep2(teamname);
+      } catch (err) {
+        showError(err.message || 'Upload fehlgeschlagen. Bitte erneut versuchen.');
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('loading');
+        submitBtn.childNodes[0].textContent = 'Jetzt hochladen 🚀 ';
+        progressWrap.classList.remove('visible');
+        progressFill.style.width = '0%';
+      }
+    });
+
+    function uploadWithProgress(formData) {
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', API_URL);
+
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            const pct = Math.round((e.loaded / e.total) * 100);
+            progressFill.style.width = pct + '%';
+            progressLabel.textContent = pct < 100 ? 'Wird hochgeladen… ' + pct + '%' : 'Fast fertig…';
+          }
+        });
+
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(JSON.parse(xhr.responseText));
+          } else {
+            let msg = 'Upload fehlgeschlagen (' + xhr.status + ').';
+            try { msg = JSON.parse(xhr.responseText).detail || msg; } catch {}
+            reject(new Error(msg));
+          }
+        });
+
+        xhr.addEventListener('error', () => reject(new Error('Netzwerkfehler. Bitte Verbindung prüfen.')));
+        xhr.send(formData);
+      });
+    }
+
+    // ── STEP TRANSITION ──────────────────────────────────────────────
+    function transitionToStep2(teamname) {
+      // Animate step indicator
+      dot1.classList.replace('active', 'done');
+      dot1.textContent = '✓';
+      line1fill.style.width = '100%';
+      dot2.classList.replace('pending', 'active');
+      stepLabel.textContent = 'Teilt euer Erlebnis';
+
+      // Swap content
+      document.getElementById('step1').style.display = 'none';
+      document.getElementById('step2').style.display = 'block';
+
+      // Scroll to top of card
+      document.querySelector('.card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  </script>
+
+</body>
+</html>
