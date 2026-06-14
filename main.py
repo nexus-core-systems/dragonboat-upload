@@ -72,16 +72,39 @@ def init_db() -> None:
         """)
         db.execute("CREATE INDEX IF NOT EXISTS idx_created ON uploads(created_at)")
         db.execute("CREATE INDEX IF NOT EXISTS idx_ip ON uploads(ip_address, created_at)")
-        # Migration: Spalten hinzufügen falls nicht vorhanden
-        for migration in [
-            "ALTER TABLE uploads ADD COLUMN image_url TEXT NOT NULL DEFAULT ''",
-            "ALTER TABLE uploads ADD COLUMN filepath TEXT NOT NULL DEFAULT ''",
-        ]:
-            try:
-                db.execute(migration)
-                log.info("Migration OK: %s", migration[:50])
-            except Exception:
-                pass  # Spalte existiert bereits
+        # Migration: filepath Spalte loswerden via Tabellen-Rebuild
+        try:
+            cols = [r[1] for r in db.execute("PRAGMA table_info(uploads)").fetchall()]
+            if 'filepath' in cols:
+                db.execute("""
+                    CREATE TABLE IF NOT EXISTS uploads_new (
+                        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                        upload_id  TEXT    NOT NULL UNIQUE,
+                        teamname   TEXT    NOT NULL,
+                        firma      TEXT,
+                        filename   TEXT    NOT NULL,
+                        image_url  TEXT    NOT NULL DEFAULT '',
+                        mime_type  TEXT,
+                        filesize   INTEGER,
+                        ip_address TEXT,
+                        created_at TEXT    NOT NULL
+                    )
+                """)
+                db.execute("""
+                    INSERT INTO uploads_new (id, upload_id, teamname, firma, filename, image_url, mime_type, filesize, ip_address, created_at)
+                    SELECT id, upload_id, teamname, firma, filename, COALESCE(image_url, ''), mime_type, filesize, ip_address, created_at
+                    FROM uploads
+                """)
+                db.execute("DROP TABLE uploads")
+                db.execute("ALTER TABLE uploads_new RENAME TO uploads")
+                log.info("Migration OK: filepath Spalte entfernt")
+        except Exception as e:
+            log.warning("Migration Warnung: %s", e)
+        # image_url hinzufügen falls fehlt
+        try:
+            db.execute("ALTER TABLE uploads ADD COLUMN image_url TEXT NOT NULL DEFAULT ''")
+        except Exception:
+            pass
 
 @contextmanager
 def get_db():
