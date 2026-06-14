@@ -160,7 +160,7 @@ def check_rate_limit(ip: str) -> None:
 
 def safe_filename(original: str, upload_id: str) -> str:
     suffix = Path(original).suffix.lower() or ".jpg"
-    return f"teamfotos/{upload_id}{suffix}"
+    return f"{upload_id}{suffix}"
 
 # ── ROUTES ───────────────────────────────────────────────────────────────────
 
