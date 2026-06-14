@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hall of Fame · Anleger Hamburg</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ocean:   #0D2B45;
+      --deep:    #081C2E;
+      --paddle:  #F4700E;
+      --foam:    #E8F4FF;
+      --mist:    #B0C8DE;
+      --white:   #FFFFFF;
+      --card-bg: #FFFFFF;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--ocean);
+      color: var(--white);
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    header {
+      padding: 20px 24px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .logo-mark {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800;
+      font-size: 22px;
+      color: var(--white);
+    }
+    .logo-mark span { color: var(--paddle); }
+    .nav-link {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--mist);
+      text-decoration: none;
+      border: 1.5px solid rgba(176,200,222,0.3);
+      padding: 7px 14px;
+      border-radius: 8px;
+      transition: border-color .2s, color .2s;
+    }
+    .nav-link:hover { border-color: var(--paddle); color: var(--paddle); }
+
+    /* ── HERO ── */
+    .hero {
+      text-align: center;
+      padding: 36px 24px 20px;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(244,112,14,0.15);
+      border: 1.5px solid rgba(244,112,14,0.4);
+      color: var(--paddle);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 5px 14px;
+      border-radius: 99px;
+      margin-bottom: 14px;
+    }
+    .hero h1 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800;
+      font-size: clamp(36px, 8vw, 56px);
+      text-transform: uppercase;
+      line-height: 1.05;
+      letter-spacing: 0.01em;
+    }
+    .hero h1 em { color: var(--paddle); font-style: normal; }
+    .hero p {
+      margin-top: 10px;
+      font-size: 15px;
+      color: var(--mist);
+      line-height: 1.55;
+    }
+    .hero-stats {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      margin-top: 20px;
+    }
+    .stat { text-align: center; }
+    .stat-num {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800;
+      font-size: 32px;
+      color: var(--paddle);
+      line-height: 1;
+    }
+    .stat-label { font-size: 11px; color: var(--mist); margin-top: 2px; letter-spacing: 0.05em; text-transform: uppercase; }
+
+    /* ── WAVE ── */
+    .wave-divider { width: 100%; overflow: hidden; line-height: 0; margin: 16px 0 0; }
+    .wave-divider svg { display: block; width: 100%; }
+
+    /* ── MAIN CONTENT ── */
+    .content {
+      background: #F0F5FA;
+      min-height: 60vh;
+      padding: 32px 16px 60px;
+    }
+
+    /* ── FILTER BAR ── */
+    .filter-bar {
+      max-width: 1100px;
+      margin: 0 auto 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .filter-bar input {
+      flex: 1;
+      min-width: 180px;
+      padding: 10px 14px;
+      border: 2px solid #D0DDE8;
+      border-radius: 10px;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      color: var(--ocean);
+      background: var(--white);
+      outline: none;
+    }
+    .filter-bar input:focus { border-color: var(--paddle); }
+    .count-label {
+      font-size: 13px;
+      color: #6A8DAA;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    /* ── GRID ── */
+    .grid {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+    }
+
+    /* ── CARD ── */
+    .photo-card {
+      background: var(--card-bg);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(13,43,69,0.10);
+      transition: transform .2s, box-shadow .2s;
+      animation: fadeUp .4s ease both;
+    }
+    .photo-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 28px rgba(13,43,69,0.16);
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-img-wrap {
+      width: 100%;
+      aspect-ratio: 4/3;
+      overflow: hidden;
+      background: #D0DDE8;
+      cursor: pointer;
+      position: relative;
+    }
+    .card-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform .3s ease;
+    }
+    .card-img-wrap:hover img { transform: scale(1.04); }
+
+    .card-body {
+      padding: 12px 14px 14px;
+    }
+    .card-team {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800;
+      font-size: 18px;
+      color: var(--ocean);
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      line-height: 1.1;
+    }
+    .card-firma {
+      font-size: 12px;
+      color: #6A8DAA;
+      margin-top: 2px;
+      font-weight: 500;
+    }
+    .card-date {
+      font-size: 11px;
+      color: #9AB0C4;
+      margin-top: 6px;
+    }
+
+    /* ── LIGHTBOX ── */
+    .lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(8,28,46,0.94);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      animation: fadeIn .2s ease;
+    }
+    .lightbox.open { display: flex; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .lightbox-inner {
+      max-width: 900px;
+      width: 100%;
+      position: relative;
+    }
+    .lightbox img {
+      width: 100%;
+      max-height: 80vh;
+      object-fit: contain;
+      border-radius: 12px;
+    }
+    .lightbox-info {
+      margin-top: 12px;
+      text-align: center;
+    }
+    .lightbox-info .lb-team {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800;
+      font-size: 24px;
+      text-transform: uppercase;
+      color: var(--white);
+    }
+    .lightbox-info .lb-sub { font-size: 13px; color: var(--mist); margin-top: 2px; }
+    .lightbox-close {
+      position: absolute;
+      top: -14px;
+      right: -14px;
+      width: 36px; height: 36px;
+      background: var(--paddle);
+      border: none;
+      border-radius: 50%;
+      color: var(--white);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    /* ── EMPTY / LOADING / ERROR ── */
+    .state-box {
+      text-align: center;
+      padding: 60px 20px;
+      color: #6A8DAA;
+      grid-column: 1/-1;
+    }
+    .state-box .state-icon { font-size: 48px; display: block; margin-bottom: 12px; }
+    .state-box p { font-size: 15px; }
+
+    /* ── CTA BOTTOM ── */
+    .cta-bottom {
+      text-align: center;
+      padding: 32px 16px 0;
+    }
+    .btn-upload {
+      display: inline-block;
+      background: var(--paddle);
+      color: var(--white);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800;
+      font-size: 20px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 14px 32px;
+      border-radius: 12px;
+      text-decoration: none;
+      box-shadow: 0 4px 16px rgba(244,112,14,0.3);
+      transition: transform .15s, box-shadow .15s;
+    }
+    .btn-upload:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(244,112,14,0.4);
+    }
+
+    /* ── LOAD MORE ── */
+    .load-more-wrap { text-align: center; margin-top: 28px; }
+    .btn-more {
+      background: transparent;
+      border: 2px solid #B0C4D8;
+      color: #4A7090;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: 14px;
+      padding: 10px 28px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: border-color .2s, color .2s;
+    }
+    .btn-more:hover { border-color: var(--paddle); color: var(--paddle); }
+    .btn-more:disabled { opacity: 0.4; cursor: default; }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo-mark">ANLEGER<span>HH</span></div>
+    <a href="/" class="nav-link">📸 Foto hochladen</a>
+  </header>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-badge">🏆 Hall of Fame</div>
+    <h1>Unsere<br><em>Alsterschipper</em></h1>
+    <p>Alle Teams, die mit uns auf der Alster gepaddelt sind.</p>
+    <div class="hero-stats">
+      <div class="stat">
+        <div class="stat-num" id="totalCount">–</div>
+        <div class="stat-label">Teams</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">🚣</div>
+        <div class="stat-label">Auf der Alster</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">⭐</div>
+        <div class="stat-label">Unvergesslich</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WAVE -->
+  <div class="wave-divider">
+    <svg viewBox="0 0 1440 32" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0,16 C240,0 480,32 720,16 C960,0 1200,32 1440,16 L1440,32 L0,32 Z" fill="#F0F5FA"/>
+    </svg>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- Filter -->
+    <div class="filter-bar">
+      <input type="text" id="searchInput" placeholder="🔍  Team oder Firma suchen…" />
+      <span class="count-label" id="countLabel"></span>
+    </div>
+
+    <!-- Grid -->
+    <div class="grid" id="grid">
+      <div class="state-box">
+        <span class="state-icon">⏳</span>
+        <p>Fotos werden geladen…</p>
+      </div>
+    </div>
+
+    <!-- Load more -->
+    <div class="load-more-wrap" id="loadMoreWrap" style="display:none;">
+      <button class="btn-more" id="loadMoreBtn">Weitere Fotos laden</button>
+    </div>
+
+    <!-- CTA -->
+    <div class="cta-bottom">
+      <a href="/" class="btn-upload">📸 Euer Teamfoto hochladen</a>
+    </div>
+
+  </div>
+
+  <!-- LIGHTBOX -->
+  <div class="lightbox" id="lightbox">
+    <div class="lightbox-inner">
+      <button class="lightbox-close" id="lightboxClose">✕</button>
+      <img id="lightboxImg" src="" alt="" />
+      <div class="lightbox-info">
+        <div class="lb-team" id="lightboxTeam"></div>
+        <div class="lb-sub" id="lightboxSub"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ── STATE ────────────────────────────────────────────────────────
+    let allPhotos  = [];
+    let filtered   = [];
+    let offset     = 0;
+    const PAGE     = 50;
+
+    // ── FETCH ────────────────────────────────────────────────────────
+    async function loadPhotos() {
+      try {
+        const res  = await fetch('/api/photos?limit=200&offset=0');
+        const data = await res.json();
+        allPhotos  = data.items || [];
+        document.getElementById('totalCount').textContent = data.total || 0;
+        applyFilter();
+      } catch (e) {
+        document.getElementById('grid').innerHTML =
+          '<div class="state-box"><span class="state-icon">😔</span><p>Fotos konnten nicht geladen werden.<br>Bitte Seite neu laden.</p></div>';
+      }
+    }
+
+    // ── FILTER ───────────────────────────────────────────────────────
+    document.getElementById('searchInput').addEventListener('input', applyFilter);
+
+    function applyFilter() {
+      const q = document.getElementById('searchInput').value.toLowerCase().trim();
+      filtered = q
+        ? allPhotos.filter(p =>
+            p.teamname.toLowerCase().includes(q) ||
+            (p.firma || '').toLowerCase().includes(q))
+        : [...allPhotos];
+
+      offset = 0;
+      renderGrid(true);
+    }
+
+    // ── RENDER ───────────────────────────────────────────────────────
+    function renderGrid(reset) {
+      const grid  = document.getElementById('grid');
+      const slice = filtered.slice(offset, offset + PAGE);
+
+      if (reset) grid.innerHTML = '';
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '<div class="state-box"><span class="state-icon">🔍</span><p>Keine Teams gefunden.</p></div>';
+        document.getElementById('loadMoreWrap').style.display = 'none';
+        document.getElementById('countLabel').textContent = '0 Teams';
+        return;
+      }
+
+      document.getElementById('countLabel').textContent =
+        filtered.length + (filtered.length === 1 ? ' Team' : ' Teams');
+
+      slice.forEach((photo, i) => {
+        const card = document.createElement('div');
+        card.className = 'photo-card';
+        card.style.animationDelay = (i * 40) + 'ms';
+        card.innerHTML =
+          '<div class="card-img-wrap" data-idx="' + (offset + i) + '">' +
+            '<img src="' + escHtml(photo.image_url) + '" alt="' + escHtml(photo.teamname) + '" loading="lazy" />' +
+          '</div>' +
+          '<div class="card-body">' +
+            '<div class="card-team">' + escHtml(photo.teamname) + '</div>' +
+            (photo.firma ? '<div class="card-firma">' + escHtml(photo.firma) + '</div>' : '') +
+            '<div class="card-date">📅 ' + escHtml(photo.date) + '</div>' +
+          '</div>';
+        grid.appendChild(card);
+      });
+
+      // Click handler für Lightbox
+      grid.querySelectorAll('.card-img-wrap').forEach(el => {
+        el.addEventListener('click', () => openLightbox(filtered[+el.dataset.idx]));
+      });
+
+      offset += slice.length;
+      const wrap = document.getElementById('loadMoreWrap');
+      wrap.style.display = offset < filtered.length ? 'block' : 'none';
+    }
+
+    document.getElementById('loadMoreBtn').addEventListener('click', () => renderGrid(false));
+
+    // ── LIGHTBOX ─────────────────────────────────────────────────────
+    function openLightbox(photo) {
+      document.getElementById('lightboxImg').src  = photo.image_url;
+      document.getElementById('lightboxTeam').textContent = photo.teamname;
+      document.getElementById('lightboxSub').textContent  =
+        (photo.firma ? photo.firma + ' · ' : '') + photo.date;
+      document.getElementById('lightbox').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLightbox() {
+      document.getElementById('lightbox').classList.remove('open');
+      document.getElementById('lightboxImg').src = '';
+      document.body.style.overflow = '';
+    }
+
+    document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
+    document.getElementById('lightbox').addEventListener('click', e => {
+      if (e.target === document.getElementById('lightbox')) closeLightbox();
+    });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+
+    // ── UTIL ─────────────────────────────────────────────────────────
+    function escHtml(str) {
+      return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ── INIT ─────────────────────────────────────────────────────────
+    loadPhotos();
+  </script>
+
+</body>
+</html>

@@ -2,14 +2,6 @@
 Drachenboot Hamburg — Foto-Upload Backend
 ==========================================
 FastAPI · Python 3.10+
-
-Setup:
-    pip install fastapi uvicorn python-multipart pillow aiofiles
-
-Run (dev):
-    uvicorn main:app --reload --port 8000
-
-Für Produktion: Gunicorn + Uvicorn-Worker oder Render/Fly.io
 """
 
 import os
@@ -36,8 +28,6 @@ MAX_FILE_MB  = int(os.getenv("MAX_FILE_MB", "20"))
 MAX_BYTES    = MAX_FILE_MB * 1024 * 1024
 ALLOWED_MIME = {"image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"}
 ALLOWED_EXT  = {".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"}
-
-# Einfache Rate-Limiting-Konstante (requests/IP/Stunde) – für echtes RL: slowapi
 MAX_UPLOADS_PER_HOUR = 5
 
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
@@ -47,7 +37,6 @@ log = logging.getLogger(__name__)
 # ── DATABASE ──────────────────────────────────────────────────────────────────
 
 def init_db() -> None:
-    """Erstellt die SQLite-Tabelle beim ersten Start."""
     with get_db() as db:
         db.execute("""
             CREATE TABLE IF NOT EXISTS uploads (
@@ -87,7 +76,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],          # In Produktion: eure Domain eintragen
+    allow_origins=["*"],
     allow_methods=["POST", "GET"],
     allow_headers=["*"],
 )
@@ -97,35 +86,23 @@ async def startup():
     init_db()
     log.info("Datenbank initialisiert · Upload-Dir: %s", UPLOAD_DIR.resolve())
 
-# ── VALIDATION HELPERS ────────────────────────────────────────────────────────
+# ── VALIDATION ────────────────────────────────────────────────────────────────
 
 def validate_image_file(file: UploadFile, data: bytes) -> None:
-    """Prüft MIME-Type, Dateiendung und Bildintegrität."""
-    # 1. Content-Type Header
     if file.content_type not in ALLOWED_MIME:
-        raise HTTPException(
-            status_code=415,
-            detail=f"Dateityp nicht erlaubt. Erlaubt: JPG, PNG, WEBP, HEIC."
-        )
-
-    # 2. Dateiendung
+        raise HTTPException(status_code=415, detail="Dateityp nicht erlaubt. Erlaubt: JPG, PNG, WEBP, HEIC.")
     suffix = Path(file.filename or "").suffix.lower()
     if suffix not in ALLOWED_EXT:
         raise HTTPException(status_code=415, detail="Ungültige Dateiendung.")
-
-    # 3. Magic Bytes / echte Bildvalidierung via Pillow
-    #    (HEIC wird von Pillow nicht nativ unterstützt → nur Header-Check)
     if file.content_type not in {"image/heic", "image/heif"}:
         try:
             from io import BytesIO
             img = Image.open(BytesIO(data))
-            img.verify()   # prüft Korruption
+            img.verify()
         except Exception:
             raise HTTPException(status_code=422, detail="Die Datei ist kein gültiges Bild.")
 
-
 def check_rate_limit(ip: str) -> None:
-    """Einfaches DB-basiertes Rate Limiting (5 Uploads / IP / Stunde)."""
     with get_db() as db:
         since = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0).isoformat()
         row = db.execute(
@@ -133,14 +110,9 @@ def check_rate_limit(ip: str) -> None:
             (ip, since)
         ).fetchone()
         if row["cnt"] >= MAX_UPLOADS_PER_HOUR:
-            raise HTTPException(
-                status_code=429,
-                detail="Zu viele Uploads. Bitte in einer Stunde erneut versuchen."
-            )
-
+            raise HTTPException(status_code=429, detail="Zu viele Uploads. Bitte in einer Stunde erneut versuchen.")
 
 def safe_filename(original: str, upload_id: str) -> str:
-    """Gibt einen sicheren, eindeutigen Dateinamen zurück."""
     suffix = Path(original).suffix.lower() or ".jpg"
     return f"{upload_id}{suffix}"
 
@@ -158,34 +130,17 @@ async def upload_photo(
     firma:    Annotated[str | None, Form(max_length=100)] = None,
     photo:    UploadFile = File(...),
 ) -> JSONResponse:
-    """
-    Nimmt ein Teamfoto entgegen, validiert es und speichert es.
-
-    Body (multipart/form-data):
-        teamname  str       Pflichtfeld
-        firma     str|None  Optional
-        photo     file      Bilddatei (JPG/PNG/WEBP/HEIC)
-
-    Returns 200 JSON: { upload_id, message }
-    """
-    # Rate limit
     client_ip = request.client.host if request.client else "unknown"
     check_rate_limit(client_ip)
 
-    # Lesen & Größe prüfen
     data = await photo.read()
     if len(data) > MAX_BYTES:
-        raise HTTPException(
-            status_code=413,
-            detail=f"Datei zu groß (max. {MAX_FILE_MB} MB)."
-        )
+        raise HTTPException(status_code=413, detail=f"Datei zu groß (max. {MAX_FILE_MB} MB).")
     if len(data) == 0:
         raise HTTPException(status_code=422, detail="Leere Datei.")
 
-    # Validierung
     validate_image_file(photo, data)
 
-    # Speichern
     upload_id = str(uuid.uuid4())
     filename  = safe_filename(photo.filename or "foto.jpg", upload_id)
     filepath  = UPLOAD_DIR / filename
@@ -193,7 +148,6 @@ async def upload_photo(
     async with aiofiles.open(filepath, "wb") as f:
         await f.write(data)
 
-    # Metadaten in DB
     now = datetime.now(timezone.utc).isoformat()
     with get_db() as db:
         db.execute(
@@ -207,17 +161,42 @@ async def upload_photo(
     log.info("Upload OK · Team: %s · Firma: %s · Datei: %s · %s KB",
              teamname, firma or "–", filename, len(data) // 1024)
 
-    return JSONResponse(content={
-        "upload_id": upload_id,
-        "message":   "Foto erfolgreich gespeichert. Danke!",
-    })
+    return JSONResponse(content={"upload_id": upload_id, "message": "Foto erfolgreich gespeichert. Danke!"})
 
 
-# ── ADMIN: Einfache Upload-Liste (Basic-Auth empfohlen für Produktion) ────────
+@app.get("/api/photos")
+async def get_photos(limit: int = 50, offset: int = 0):
+    """Öffentliche Galerie-API — gibt Teamname, Firma, Datum und Bild-URL zurück."""
+    with get_db() as db:
+        rows = db.execute(
+            """SELECT upload_id, teamname, firma, filename, created_at
+               FROM uploads ORDER BY created_at DESC LIMIT ? OFFSET ?""",
+            (limit, offset)
+        ).fetchall()
+        total = db.execute("SELECT COUNT(*) as n FROM uploads").fetchone()["n"]
+
+    items = []
+    for r in rows:
+        # Datum formatieren: "14. Jun 2026"
+        try:
+            dt = datetime.fromisoformat(r["created_at"])
+            date_str = dt.strftime("%-d. %b %Y")
+        except Exception:
+            date_str = r["created_at"][:10]
+
+        items.append({
+            "upload_id": r["upload_id"],
+            "teamname":  r["teamname"],
+            "firma":     r["firma"],
+            "image_url": f"/uploads/{r['filename']}",
+            "date":      date_str,
+        })
+
+    return {"total": total, "items": items}
+
 
 @app.get("/api/admin/uploads")
 async def list_uploads(limit: int = 50, offset: int = 0):
-    """Alle Uploads auflisten (in Produktion mit Auth sichern!)."""
     with get_db() as db:
         rows = db.execute(
             "SELECT upload_id, teamname, firma, filename, filesize, created_at "
@@ -225,20 +204,17 @@ async def list_uploads(limit: int = 50, offset: int = 0):
             (limit, offset)
         ).fetchall()
         total = db.execute("SELECT COUNT(*) as n FROM uploads").fetchone()["n"]
-    return {
-        "total": total,
-        "items": [dict(r) for r in rows],
-    }
+    return {"total": total, "items": [dict(r) for r in rows]}
 
 
-# ── STATISCHE DATEIEN (Frontend) ──────────────────────────────────────────────
-# Wenn du alles in einem Repo hast:
-# app.mount("/", StaticFiles(directory="static", html=True), name="static")
+# ── STATISCHE DATEIEN ─────────────────────────────────────────────────────────
+# Uploads-Ordner öffentlich servieren (für Galerie)
+app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
+# Frontend-Dateien (index.html, gallery.html)
+app.mount("/", StaticFiles(directory=".", html=True), name="static")
 
 
 # ── HAUPTPROGRAMM ─────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
-from fastapi.staticfiles import StaticFiles
-app.mount("/", StaticFiles(directory=".", html=True), name="static")
